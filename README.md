@@ -1,5 +1,7 @@
 # dsh-gate
 
+English | [中文](README.zh.md)
+
 > **Unofficial tool. Not affiliated with DeepSeek.** This project addresses a conflict between
 > the DeepSeek Harness (dsh) macOS sandbox and local build toolchains. It is not part of the
 > DeepSeek product line.

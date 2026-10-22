@@ -1,5 +1,7 @@
 # dsh-gate Manual
 
+English | [中文](MANUAL.zh.md)
+
 > **Unofficial tool. Not affiliated with DeepSeek.** It addresses a conflict between the
 > DeepSeek Harness (dsh) sandbox and macOS build toolchains.
 > Design details: [DESIGN.md](DESIGN.md).

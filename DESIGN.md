@@ -1,5 +1,7 @@
 # dsh-gate Design
 
+English | [中文](DESIGN.zh.md)
+
 > Version 0.1.0 · 2026-10-22 · Unofficial tool, not affiliated with DeepSeek.
 > Code: repository root · User manual: [MANUAL.md](MANUAL.md)
 
