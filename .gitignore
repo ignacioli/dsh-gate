@@ -1,3 +1,92 @@
+# macOS
 .DS_Store
-*.log
+
+# Swift / Xcode
+.build/
+DerivedData/
+*.swiftpm/
+Packages/
+xcuserdata/
+*.xcuserstate
+
+# Environment and local secrets
+.env
+.venv
+.env.*
+!.env.example
+
+# JavaScript / TypeScript
 node_modules/
+dist/
+.vite/
+coverage/
+*.tsbuildinfo
+
+# Rust / Tauri
+target/
+src-tauri/target/
+
+# Tests and browser automation
+playwright-report/
+test-results/
+blob-report/
+.playwright-cli/
+
+# Logs and temporary files
+*.log
+*.tmp*
+*.swp
+*~
+
+# IDE-local settings
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ignore .specify directory and all its contents
+.specify/**
+
+# force track feature.json in .specify
+!.specify/feature.json
+
+# force track constitution.md in memory folder
+!.specify/memory
+!.specify/memory/constitution.md
+
+# cursor: only the shared project rules are tracked
+.cursor/*
+!.cursor/rules/
+
+# claude
+.claude
+
+# Codex
+.codex/
+
+# agents
+.agents/
+
+# chats
+.chats/
+
+# pnpm
+.pnpm-store/
+
+# local handoff notes
+.handoff
+
+# codegraph
+.codegraph/
+
+# omo
+.omo/
+
+# local symlink, not part of this repository
+/specs
+
+# local git worktrees
+.worktrees/
+
+# local deepseek harness agent tooling
+.dsh/
