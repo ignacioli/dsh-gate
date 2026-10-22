@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "root": "@ROOT@",
+  "project": "@PROJECT@",
+  "schemes": { "build": "App", "test": "AppTests" },
+  "destination": "platform=macOS",
+  "derivedDataRoot": "/tmp/dsh-gate",
+  "allowedCwdRoots": ["."],
+  "writeRoots": ["~/Library/Developer", "~/Library/Caches"],
+  "steps": {
+    "build": [
+      {
+        "label": "build",
+        "argv": ["/usr/bin/xcodebuild", "build", "-project", "{project}", "-scheme", "{scheme:build}", "-destination", "{destination}", "-derivedDataPath", "{derivedData}", "CODE_SIGNING_ALLOWED=NO"]
+      }
+    ],
+    "test": {
+      "unit": [
+        {
+          "label": "test",
+          "argv": ["/usr/bin/xcodebuild", "test", "-project", "{project}", "-scheme", "{scheme:test}", "-destination", "{destination}", "-derivedDataPath", "{derivedData}", "CODE_SIGNING_ALLOWED=NO", "-only-testing:{only}"]
+        }
+      ]
+    }
+  },
+  "timeoutsMs": { "build": 900000, "test": 1800000 },
+  "testStopOnFirstFailure": false
+}

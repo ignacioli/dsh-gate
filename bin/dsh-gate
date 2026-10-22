@@ -1,0 +1,22 @@
+#!/bin/sh
+# Resolve this wrapper even when it is symlinked (for example ~/bin/dsh-gate),
+# then hand off to the Node client next to it.
+target="$0"
+while [ -L "$target" ]; do
+  dir=$(cd -P "$(dirname "$target")" && pwd)
+  target=$(readlink "$target")
+  case "$target" in
+    /*) ;;
+    *) target="$dir/$target" ;;
+  esac
+done
+here=$(cd -P "$(dirname "$target")" && pwd)
+
+node_bin=${DSH_GATE_NODE:-$(command -v node 2>/dev/null || true)}
+[ -n "$node_bin" ] || node_bin=/opt/homebrew/bin/node
+if [ ! -x "$node_bin" ]; then
+  echo "dsh-gate: node not found; set DSH_GATE_NODE to a Node.js 18+ executable" >&2
+  exit 69
+fi
+
+exec "$node_bin" "$here/../client/dsh-gate.mjs" "$@"

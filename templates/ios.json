@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "root": "@ROOT@",
+  "project": "@PROJECT@",
+  "schemes": {
+    "build": "FineCoach",
+    "unit": "FineCoachTests",
+    "integration": "FineCoachIntegrationTests"
+  },
+  "destination": "@DESTINATION@",
+  "derivedDataRoot": "/tmp/dsh-gate",
+  "allowedCwdRoots": [".", ".worktrees", ".agents/worktrees"],
+  "writeRoots": ["~/Library/Developer", "~/Library/Logs", "~/Library/Caches"],
+  "steps": {
+    "build": [
+      {
+        "label": "build-for-testing",
+        "argv": ["/usr/bin/xcodebuild", "build-for-testing", "-project", "{project}", "-scheme", "{scheme:build}", "-destination", "{destination}", "-derivedDataPath", "{derivedData}", "OTHER_SWIFT_FLAGS=-disable-sandbox"]
+      }
+    ],
+    "test": {
+      "unit": [
+        {
+          "label": "FineCoachTests",
+          "argv": ["/usr/bin/xcodebuild", "test", "-project", "{project}", "-scheme", "{scheme:unit}", "-destination", "{destination}", "-derivedDataPath", "{derivedData}", "OTHER_SWIFT_FLAGS=-disable-sandbox", "-only-testing:{only}"]
+        }
+      ],
+      "integration": [
+        {
+          "label": "FineCoachIntegrationTests",
+          "argv": ["/usr/bin/xcodebuild", "test", "-project", "{project}", "-scheme", "{scheme:integration}", "-destination", "{destination}", "-derivedDataPath", "{derivedData}", "OTHER_SWIFT_FLAGS=-disable-sandbox", "-only-testing:{only}"]
+        }
+      ]
+    }
+  },
+  "timeoutsMs": { "build": 900000, "test": 1800000 },
+  "testStopOnFirstFailure": false
+}

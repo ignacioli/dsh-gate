@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "root": "@ROOT@",
+  "derivedDataRoot": "/tmp/dsh-gate",
+  "allowedCwdRoots": ["."],
+  "writeRoots": ["~/.gradle", "~/.android", "~/Library/Android", "~/Library/Caches"],
+  "steps": {
+    "build": [
+      {
+        "label": "assembleDebug",
+        "argv": ["{workspace}/gradlew", "assembleDebug", "--console=plain", "--no-daemon"]
+      }
+    ],
+    "test": {
+      "unit": [
+        {
+          "label": "testDebugUnitTest",
+          "argv": ["{workspace}/gradlew", "testDebugUnitTest", "--console=plain", "--no-daemon", "--tests", "{only}"]
+        }
+      ]
+    }
+  },
+  "timeoutsMs": { "build": 1200000, "test": 1800000 },
+  "testStopOnFirstFailure": false
+}
