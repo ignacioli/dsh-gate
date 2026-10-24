@@ -235,8 +235,8 @@ To onboard a new project: `install.sh --template macos --project <xcodeproj>`, o
 - After Xcode / simulator / Gradle upgrades: run `dsh-gate doctor`; extend `config.writeRoots` if a
   new path is denied.
 - Change commands: edit `~/.config/dsh-gate/<key>/config.json` (user-owned, not in the repository).
-- Upgrade the tool: update the tool checkout, then `./install.sh --root <project> --force`, or
-  `launchctl kickstart -k gui/$(id -u)/com.dsh-gate.<key>`.
+- Upgrade the tool: update the source checkout, then `./install.sh --root <project>` (re-copies the
+  runtime to `<prefix>/share/dsh-gate` and reloads the daemon).
 - Audit is not rotated automatically; archive it as needed.
 
 ## 13. Measured record (0.1.0, 2026-10-22)

@@ -209,7 +209,7 @@ Unix socket（0600），一行一个 JSON 请求：
 
 - Xcode / 模拟器 / Gradle 升级后：跑 `dsh-gate doctor`；若出现新的被拒路径，补 `config.writeRoots`。
 - 改命令：直接编辑 `~/.config/dsh-gate/<key>/config.json`（用户文件，不进仓库）。
-- 升级工具：更新工具 checkout 后 `./install.sh --root <project> --force`，或 `launchctl kickstart -k gui/$(id -u)/com.dsh-gate.<key>`。
+- 升级工具：更新源码 checkout 后 `./install.sh --root <project>`（重新复制运行文件到 `<prefix>/share/dsh-gate` 并重载 daemon）。
 - 审计不自动轮转，按需归档。
 
 ## 13. 实测记录（0.1.0，2026-10-22）

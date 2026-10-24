@@ -52,7 +52,7 @@ cd /path/to/project-checkout
 1. 确定被门禁项目的主 checkout（`--root` 或当前目录），推导项目 key（例如 `finecoach-2a67619b`）；
 2. 渲染 `~/.config/dsh-gate/<key>/config.json`（已存在则保留；`--force` 覆盖）；
 3. 写入并加载 LaunchAgent `~/Library/LaunchAgents/com.dsh-gate.<key>.plist`；
-4. 若存在 `~/bin`，创建 `~/bin/dsh-gate` 链接；
+4. 把运行文件（`bin/`、`client/`、`daemon/`、`lib/`）复制到 `<prefix>/share/dsh-gate`，并创建 `<prefix>/bin/dsh-gate` 链接（默认前缀 `~/.local`，`--prefix <dir>` 可改）；LaunchAgent 运行的是已安装的 daemon，源码 checkout 之后可以移动；
 5. 打印状态和下一步。
 
 `--no-launchctl` 只写配置和 plist、不加载 LaunchAgent（用于验证或测试）。
@@ -124,7 +124,7 @@ dsh-gate test --scope unit --only FineCoachTests/NumberFormatScanTests
 
 每个项目一个实例：独立的 `~/.config/dsh-gate/<key>/`、独立的 LaunchAgent（`com.dsh-gate.<key>`）、独立的 socket 和审计。项目之间互不可见、互不可操作。
 
-`~/bin/dsh-gate` 只有一个软链接（指向最后安装的 checkout）。多项目时，要么保证各 checkout 的工具版本一致，要么在任务说明里用绝对路径调用各自 checkout 的 `.dsh/gate/bin/dsh-gate`。
+所有项目共用一份已安装的运行文件和同一个 `dsh-gate` 命令；为另一个项目安装（或升级）会替换所有项目使用的运行文件。卸载时只有在没有其他项目的 LaunchAgent 时才删除运行文件。
 
 ## 7. 排障
 
@@ -165,5 +165,5 @@ cd /path/to/project-checkout
 ## 10. 维护
 
 - Xcode / 模拟器 / Gradle 升级后：`dsh-gate doctor`；必要时补 `writeRoots`。
-- 升级工具：更新工具 checkout 后 `./install.sh --root <project> --force`（或 `--no-launchctl` 后自行重启 daemon）。
+- 升级工具：更新源码 checkout 后 `./install.sh --root <project>`，会重新复制运行文件并重载 daemon；只有需要按模板重新生成 config 时才加 `--force`。
 - 审计不自动轮转，按需归档。

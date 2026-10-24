@@ -55,13 +55,15 @@ cd dsh-gate
 ./install.sh --root /path/to/project --dry-run            # print only, write nothing
 ```
 
-Then, from the project directory:
+Install copies the runtime to `~/.local/share/dsh-gate` and links `~/.local/bin/dsh-gate`
+(`--prefix <dir>` changes both), so the command works from any directory once `~/.local/bin` is on
+`PATH`, and the source checkout can move. Then, from the project directory:
 
 ```sh
 cd /path/to/project-checkout
-/path/to/dsh-gate/bin/dsh-gate doctor
-/path/to/dsh-gate/bin/dsh-gate build
-/path/to/dsh-gate/bin/dsh-gate test --scope unit
+dsh-gate doctor
+dsh-gate build
+dsh-gate test --scope unit
 ```
 
 ## Status

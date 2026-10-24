@@ -45,13 +45,13 @@ cd dsh-gate
 ./install.sh --root /path/to/project --dry-run            # 只打印，不写文件
 ```
 
-然后在项目目录里：
+安装会把运行文件复制到 `~/.local/share/dsh-gate`，并创建 `~/.local/bin/dsh-gate` 链接（`--prefix <dir>` 可同时改这两处）。`~/.local/bin` 在 `PATH` 里时，任何目录都能直接用 `dsh-gate`；源码 checkout 移动或删除也不影响已安装的工具。然后在项目目录里：
 
 ```sh
 cd /path/to/project-checkout
-/path/to/dsh-gate/bin/dsh-gate doctor
-/path/to/dsh-gate/bin/dsh-gate build
-/path/to/dsh-gate/bin/dsh-gate test --scope unit
+dsh-gate doctor
+dsh-gate build
+dsh-gate test --scope unit
 ```
 
 ## 状态
