@@ -60,7 +60,9 @@ Install does the following:
    project key (for example `finecoach-2a67619b`);
 2. Renders `~/.config/dsh-gate/<key>/config.json` (kept if it already exists; `--force` overwrites);
 3. Writes and loads the LaunchAgent `~/Library/LaunchAgents/com.dsh-gate.<key>.plist`;
-4. Links `~/bin/dsh-gate` when `~/bin` exists;
+4. Copies the runtime (`bin/`, `client/`, `daemon/`, `lib/`) to `<prefix>/share/dsh-gate` and links
+   `<prefix>/bin/dsh-gate` to it (default prefix `~/.local`; `--prefix <dir>` changes it). The
+   LaunchAgent runs the installed daemon, so the source checkout can move afterwards;
 5. Prints the state and the next step.
 
 `--no-launchctl` writes the config and plist without loading the LaunchAgent (for validation or
@@ -141,9 +143,9 @@ Rules:
 One instance per project: separate `~/.config/dsh-gate/<key>/`, separate LaunchAgent
 (`com.dsh-gate.<key>`), separate socket and audit. Projects cannot see or operate on each other.
 
-`~/bin/dsh-gate` is a single symlink (pointing at the last installed checkout). With several
-projects, either keep the tool versions identical or call each checkout's
-`.dsh/gate/bin/dsh-gate` by absolute path in the task instructions.
+All projects share one installed runtime and one `dsh-gate` command; installing for another
+project (or upgrading) replaces the runtime for every project. Uninstalling removes the runtime
+only when no other project's LaunchAgent remains.
 
 ## 7. Troubleshooting
 
@@ -190,6 +192,6 @@ When running from the tool checkout, pass `--root <project-checkout>`.
 ## 10. Maintenance
 
 - After Xcode / simulator / Gradle upgrades: `dsh-gate doctor`; extend `writeRoots` if needed.
-- Upgrade the tool: update the tool checkout, then `./install.sh --root <project> --force` (or
-  `--no-launchctl` and restart the daemon yourself).
+- Upgrade the tool: update the source checkout, then `./install.sh --root <project>`; it re-copies
+  the runtime and reloads the daemon. Add `--force` only to re-render the config from the template.
 - Audit is not rotated automatically; archive it as needed.

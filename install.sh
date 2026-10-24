@@ -5,9 +5,13 @@
 # must be free to apply its own Seatbelt profile around project commands, and
 # the per-project config must land outside the agent-writable checkout.
 #
+# The runtime (bin, client, daemon, lib) is copied to <prefix>/share/dsh-gate and
+# <prefix>/bin/dsh-gate links to it, so the installed tool does not depend on
+# where this source checkout lives. Default prefix: ~/.local.
+#
 # Options for validation/automation:
 #   --dry-run       print computed root/key/config instead of writing anything
-#   --no-launchctl  write config + plist but do not load a LaunchAgent
+#   --no-launchctl  install the runtime, write config + plist, but do not load a LaunchAgent
 set -eu
 
 LABEL_PREFIX=com.dsh-gate
@@ -20,6 +24,7 @@ usage() {
   --project <path/to.xcodeproj>               Xcode 项目路径（macOS 模板可自动探测根目录）
   --destination <xcodebuild 目标>             默认自动选一个 iPhone 模拟器（iOS 模板）
   --root <project-checkout>                   被门禁的项目 checkout（从项目目录运行时自动推断）
+  --prefix <dir>                              安装前缀（默认 ~/.local）：程序复制到 <dir>/share/dsh-gate，命令链接到 <dir>/bin/dsh-gate
   --force                                     覆盖已存在的 config.json
   --dry-run                                   只打印，不写文件、不加载 LaunchAgent
   --no-launchctl                              写配置和 plist，但不加载 LaunchAgent
@@ -33,6 +38,7 @@ ROOT_ARG=
 FORCE=no
 DRY_RUN=no
 NO_LAUNCHCTL=no
+PREFIX=${DSH_GATE_PREFIX:-$HOME/.local}
 while [ $# -gt 0 ]; do
   case "$1" in
     --template) TEMPLATE=$2; shift 2 ;;
@@ -43,6 +49,8 @@ while [ $# -gt 0 ]; do
     --destination=*) DESTINATION=${1#*=}; shift ;;
     --root) ROOT_ARG=$2; shift 2 ;;
     --root=*) ROOT_ARG=${1#*=}; shift ;;
+    --prefix) PREFIX=$2; shift 2 ;;
+    --prefix=*) PREFIX=${1#*=}; shift ;;
     --force) FORCE=yes; shift ;;
     --dry-run) DRY_RUN=yes; shift ;;
     --no-launchctl) NO_LAUNCHCTL=yes; shift ;;
@@ -87,6 +95,12 @@ const mod = await import(pathToFileURL(process.argv[1]).href);
 process.stdout.write(mod.projectKey(process.argv[2]));
 ' "$GATE_DIR/lib/common.mjs" "$ROOT")
 
+case "$PREFIX" in
+  /*) ;;
+  *) PREFIX="$PWD/$PREFIX" ;;
+esac
+INSTALL_DIR="$PREFIX/share/dsh-gate"
+BIN_DIR="$PREFIX/bin"
 PROJECT_DIR="$HOME/.config/dsh-gate/$KEY"
 CONFIG="$PROJECT_DIR/config.json"
 LABEL="$LABEL_PREFIX.$KEY"
@@ -138,11 +152,35 @@ render_plist() {
   sed \
     -e "s|__LABEL__|$LABEL|" \
     -e "s|__NODE__|$NODE|" \
-    -e "s|__DAEMON__|$GATE_DIR/daemon/dsh-gate-daemon.mjs|" \
+    -e "s|__DAEMON__|$INSTALL_DIR/daemon/dsh-gate-daemon.mjs|" \
     -e "s|__ROOT__|$ROOT|" \
     -e "s|__LOG__|$PROJECT_DIR/logs|" \
     -e "s|__PATH__|$path_value|" \
     "$GATE_DIR/launchd/$LABEL_PREFIX.plist.template"
+}
+
+install_runtime() {
+  if [ "$(cd "$GATE_DIR" && pwd -P)" = "$(mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR" && pwd -P)" ]; then
+    echo "install: run install.sh from the dsh-gate source checkout, not from $INSTALL_DIR" >&2
+    exit 1
+  fi
+  staging="$INSTALL_DIR.new.$$"
+  rm -rf "$staging"
+  mkdir -p "$staging"
+  for part in bin client daemon lib; do cp -R "$GATE_DIR/$part" "$staging/$part"; done
+  for doc in README.md README.zh.md MANUAL.md MANUAL.zh.md; do
+    if [ -f "$GATE_DIR/$doc" ]; then cp "$GATE_DIR/$doc" "$staging/$doc"; fi
+  done
+  rm -rf "$INSTALL_DIR"
+  mv "$staging" "$INSTALL_DIR"
+  mkdir -p "$BIN_DIR"
+  ln -sfn "$INSTALL_DIR/bin/dsh-gate" "$BIN_DIR/dsh-gate"
+  echo "dsh-gate: installed runtime to $INSTALL_DIR"
+  echo "dsh-gate: linked $BIN_DIR/dsh-gate"
+  case ":$PATH:" in
+    *":$BIN_DIR:"*) ;;
+    *) echo "dsh-gate: note: $BIN_DIR is not on PATH; add it to use \`dsh-gate\` from any directory" ;;
+  esac
 }
 
 if [ "$DRY_RUN" = yes ]; then
@@ -151,6 +189,8 @@ if [ "$DRY_RUN" = yes ]; then
   echo "dsh-gate: config:  $CONFIG"
   echo "dsh-gate: label:   $LABEL"
   echo "dsh-gate: plist:   $PLIST"
+  echo "dsh-gate: runtime: $INSTALL_DIR"
+  echo "dsh-gate: command: $BIN_DIR/dsh-gate"
   echo "--- config.json ---"
   render_config
   echo "--- plist ---"
@@ -170,6 +210,8 @@ else
 fi
 mkdir -p "$PROJECT_DIR/run" "$PROJECT_DIR/logs"
 
+install_runtime
+
 mkdir -p "$HOME/Library/LaunchAgents"
 render_plist > "$PLIST"
 echo "dsh-gate: wrote $PLIST"
@@ -178,7 +220,13 @@ if [ "$NO_LAUNCHCTL" = yes ]; then
   echo "dsh-gate: --no-launchctl: skipped LaunchAgent load"
 else
   launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
-  launchctl bootstrap "gui/$(id -u)" "$PLIST"
+  # bootout returns before the old service is gone; bootstrap fails with EIO until then.
+  tries=0
+  while launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1 && [ "$tries" -lt 20 ]; do
+    sleep 0.5
+    tries=$((tries + 1))
+  done
+  launchctl bootstrap "gui/$(id -u)" "$PLIST" || { sleep 2; launchctl bootstrap "gui/$(id -u)" "$PLIST"; }
   sleep 1
   if launchctl print "gui/$(id -u)/$LABEL" >/dev/null 2>&1; then
     echo "dsh-gate: LaunchAgent $LABEL loaded"
@@ -186,16 +234,10 @@ else
     echo "dsh-gate: LaunchAgent failed to load; inspect $PROJECT_DIR/logs/daemon.err.log" >&2
     exit 1
   fi
-  if [ -d "$HOME/bin" ]; then
-    ln -sf "$GATE_DIR/bin/dsh-gate" "$HOME/bin/dsh-gate"
-    echo "dsh-gate: linked $HOME/bin/dsh-gate"
-  else
-    echo "dsh-gate: add $GATE_DIR/bin to PATH, or call $GATE_DIR/bin/dsh-gate directly"
-  fi
 fi
 
 echo "dsh-gate: project key: $KEY"
 echo "dsh-gate: config: $CONFIG"
 echo "dsh-gate: audit:  $PROJECT_DIR/audit.jsonl"
 echo "dsh-gate: logs:   $PROJECT_DIR/logs"
-echo "dsh-gate: next:   cd $ROOT && $GATE_DIR/bin/dsh-gate doctor"
+echo "dsh-gate: next:   cd $ROOT && dsh-gate doctor"

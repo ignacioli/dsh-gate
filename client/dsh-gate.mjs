@@ -134,7 +134,7 @@ function handleEvent(event) {
 socket.on('error', (error) => {
   process.stderr.write(`dsh-gate: cannot reach the daemon for ${key}\n`);
   process.stderr.write(`dsh-gate: ${error.code ?? error.message} (${socketPath(key)})\n`);
-  process.stderr.write(`dsh-gate: one-time install: cd ${GATE_DIR} && ./install.sh  (see ${GATE_DIR}/MANUAL.md)\n`);
+  process.stderr.write(`dsh-gate: one-time install: run install.sh from the dsh-gate source checkout  (see ${GATE_DIR}/MANUAL.md)\n`);
   process.exit(69);
 });
 

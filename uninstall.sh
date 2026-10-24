@@ -8,15 +8,19 @@ GATE_DIR=$(cd -P "$(dirname "$0")" && pwd)
 PURGE=no
 ROOT_ARG=
 DRY_RUN=no
+PREFIX=${DSH_GATE_PREFIX:-$HOME/.local}
 
 while [ $# -gt 0 ]; do
   case "$1" in
     --root) ROOT_ARG=$2; shift 2 ;;
     --root=*) ROOT_ARG=${1#*=}; shift ;;
+    --prefix) PREFIX=$2; shift 2 ;;
+    --prefix=*) PREFIX=${1#*=}; shift ;;
     --purge) PURGE=yes; shift ;;
     --dry-run) DRY_RUN=yes; shift ;;
     -h|--help)
-      echo "用法: uninstall.sh [--root <project-checkout>] [--purge] [--dry-run]"
+      echo "用法: uninstall.sh [--root <project-checkout>] [--prefix <dir>] [--purge] [--dry-run]"
+      echo "  --prefix   安装前缀（默认 ~/.local）；最后一个项目卸载时一并删除 <dir>/share/dsh-gate 与 <dir>/bin/dsh-gate"
       echo "  --purge    同时删除 ~/.config/dsh-gate/<key>/"
       echo "  --dry-run  只打印将删除的 label/plist/目录"
       exit 0
@@ -57,6 +61,8 @@ const mod = await import(pathToFileURL(process.argv[1]).href);
 process.stdout.write(mod.projectKey(process.argv[2]));
 ' "$GATE_DIR/lib/common.mjs" "$ROOT")
 
+INSTALL_DIR="$PREFIX/share/dsh-gate"
+BIN_DIR="$PREFIX/bin"
 PROJECT_DIR="$HOME/.config/dsh-gate/$KEY"
 LABEL="$LABEL_PREFIX.$KEY"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
@@ -67,6 +73,7 @@ if [ "$DRY_RUN" = yes ]; then
   echo "dsh-gate: label:   $LABEL"
   echo "dsh-gate: plist:   $PLIST"
   echo "dsh-gate: state:   $PROJECT_DIR (purge: $PURGE)"
+  echo "dsh-gate: runtime: $INSTALL_DIR (removed only when no other project remains)"
   exit 0
 fi
 
@@ -74,6 +81,18 @@ launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
 rm -f "$PLIST"
 rm -f "$PROJECT_DIR/run/gate.sock" "$PROJECT_DIR/run/gate.pid"
 if [ -L "$HOME/bin/dsh-gate" ]; then rm -f "$HOME/bin/dsh-gate"; fi
+
+remaining=$(ls "$HOME/Library/LaunchAgents/$LABEL_PREFIX".*.plist 2>/dev/null | wc -l | tr -d ' ')
+if [ "$remaining" = 0 ]; then
+  if [ -L "$BIN_DIR/dsh-gate" ] && [ "$(readlink "$BIN_DIR/dsh-gate")" = "$INSTALL_DIR/bin/dsh-gate" ]; then
+    rm -f "$BIN_DIR/dsh-gate"
+  fi
+  case "$INSTALL_DIR" in
+    */share/dsh-gate) rm -rf "$INSTALL_DIR"; echo "dsh-gate: removed runtime $INSTALL_DIR" ;;
+  esac
+else
+  echo "dsh-gate: kept runtime $INSTALL_DIR ($remaining other project(s) still installed)"
+fi
 
 echo "dsh-gate: LaunchAgent $LABEL removed"
 if [ "$PURGE" = yes ]; then
